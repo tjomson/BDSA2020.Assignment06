@@ -1,6 +1,6 @@
 namespace Assignment06.Models
 {
-    public enum Response
+    public enum Status
     {
         Created,
         Updated,

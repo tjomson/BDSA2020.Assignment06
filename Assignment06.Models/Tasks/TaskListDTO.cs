@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Assignment06.Entities;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("Assignment06.Models.Tests")]
 
 namespace Assignment06.Models
 {
@@ -16,7 +19,7 @@ namespace Assignment06.Models
 
         public State State { get; set; }
 
-        public IDictionary<int, string> Tags { get; set; } = new Dictionary<int, string>();
+        public IEnumerable<KeyValuePair<int, string>> Tags { get; set; } = new Dictionary<int, string>();
 
         /// <summary>
         /// Required as .ToDictionary() is not allowed in an Entity Framework Core Linq query

@@ -4,6 +4,12 @@
     <ProjectReference Include="..\Assignment06.Models\Assignment06.Models.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Extensions.QueryableExtensions" Version="1.0.25" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
+    <PackageReference Include="System.Data.Entity.Repository" Version="2.0.0.1" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>

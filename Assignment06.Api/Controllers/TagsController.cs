@@ -18,7 +18,7 @@ namespace Assignment06.Api.Controllers
         }
 
         // GET: tags/5
-        [HttpGet("{id}", Name = "Get")]
+        [HttpGet("{id}")]
         public async Task<ActionResult<TagDTO>> Get(int id)
         {
             throw new NotImplementedException();

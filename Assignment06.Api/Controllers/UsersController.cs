@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Assignment06.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Assignment06.Api.Controllers
@@ -10,25 +12,40 @@ namespace Assignment06.Api.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
+        private readonly IUserRepository _repository;
+
+        public UsersController(IUserRepository repository)
+        {
+            _repository = repository;
+        }
+
         // GET: users
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserListDTO>>> Get()
         {
-            throw new NotImplementedException();
+            var read = await _repository.ReadAsync();
+            return read.ToList();
         }
 
-        // GET: users/5
-        [HttpGet("{id}", Name = "Get")]
+        // GET: users/5 
+        [HttpGet("{id}")]
         public async Task<ActionResult<UserDetailsDTO>> Get(int id)
         {
-            throw new NotImplementedException();
+            return await _repository.ReadAsync(id);
         }
 
         // POST: users
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] UserCreateDTO user)
         {
-            throw new NotImplementedException();
+            var status = await _repository.CreateAsync(user);
+
+            if(status.response == Status.Conflict)
+            {
+                return Conflict();
+            } 
+            
+            return CreatedAtAction(nameof(Get), new { status.taskId }, default);
         }
 
         // PUT: users/5

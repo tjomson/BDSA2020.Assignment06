@@ -10,6 +10,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using Assignment06.Entities;
+using Assignment06.Models;
+using Microsoft.OpenApi.Models;
 
 namespace Assignment06.Api
 {
@@ -25,7 +29,18 @@ namespace Assignment06.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddScoped<IKanbanContext, KanbanContext>();
+            services.AddScoped<ITagRepository, TagRepository>();
+            services.AddScoped<ITaskRepository, TaskRepository>();
+            //services.AddScoped<IUserRepository, UserRepository>();
+        
             services.AddControllers();
+            services.AddRouting(options => options.LowercaseUrls = true);
+            
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -45,6 +60,13 @@ namespace Assignment06.Api
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+            });
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+                c.RoutePrefix = string.Empty;
             });
         }
     }

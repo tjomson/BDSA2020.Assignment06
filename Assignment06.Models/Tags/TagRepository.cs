@@ -1,8 +1,9 @@
 using System.Linq;
+using System.Threading.Tasks;
 using Assignment06.Entities;
 using Microsoft.EntityFrameworkCore;
 using static Assignment06.Entities.State;
-using static Assignment06.Models.Response;
+using static Assignment06.Models.Status;
 
 namespace Assignment06.Models
 {
@@ -15,9 +16,9 @@ namespace Assignment06.Models
             _context = context;
         }
 
-        public (Response response, int taskId) Create(TagCreateDTO tag)
+        public async Task<(Status response, int taskId)> Create(TagCreateDTO tag)
         {
-            var tagExists = _context.Tags.Any(t => t.Name == tag.Name);
+            var tagExists = await _context.Tags.AnyAsync(t => t.Name == tag.Name);
 
             if (tagExists)
             {
@@ -30,7 +31,7 @@ namespace Assignment06.Models
             };
 
             _context.Tags.Add(entity);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return (Created, entity.Id);
         }
@@ -50,7 +51,7 @@ namespace Assignment06.Models
                    };
         }
 
-        public TagDTO Read(int tagId)
+        public async Task<TagDTO> Read(int tagId)
         {
             var tags = from t in _context.Tags
                        where t.Id == tagId
@@ -65,19 +66,19 @@ namespace Assignment06.Models
                            Removed = t.Tasks.Count(a => a.Task.State == New)
                        };
 
-            return tags.FirstOrDefault();
+            return await tags.FirstOrDefaultAsync();
         }
 
-        public Response Update(TagUpdateDTO tag)
+        public async Task<Status> Update(TagUpdateDTO tag)
         {
-            var tagExists = _context.Tags.Any(t => t.Id != tag.Id && t.Name == tag.Name);
+            var tagExists = await _context.Tags.AnyAsync(t => t.Id != tag.Id && t.Name == tag.Name);
 
             if (tagExists)
             {
                 return Conflict;
             }
 
-            var entity = _context.Tags.Find(tag.Id);
+            var entity = await _context.Tags.FindAsync(tag.Id);
 
             if (entity == null)
             {
@@ -86,14 +87,14 @@ namespace Assignment06.Models
 
             entity.Name = tag.Name;
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return Updated;
         }
 
-        public Response Delete(int tagId, bool force = false)
+        public async Task<Status> Delete(int tagId, bool force = false)
         {
-            var entity = _context.Tags.Include(t => t.Tasks).FirstOrDefault(t => t.Id == tagId);
+            var entity = await _context.Tags.Include(t => t.Tasks).FirstOrDefaultAsync(t => t.Id == tagId);
 
             if (entity == null)
             {
@@ -106,7 +107,8 @@ namespace Assignment06.Models
             }
 
             _context.Tags.Remove(entity);
-            _context.SaveChanges();
+
+            await _context.SaveChangesAsync();
 
             return Deleted;
         }

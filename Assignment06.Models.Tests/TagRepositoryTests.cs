@@ -4,8 +4,8 @@ using Assignment06.Entities;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
-using static Assignment06.Entities.State;
-using static Assignment06.Models.Response;
+using static Assignment06.Models.Status;
+using Task = System.Threading.Tasks.Task;
 
 namespace Assignment06.Models.Tests
 {
@@ -26,53 +26,53 @@ namespace Assignment06.Models.Tests
         }
 
         [Fact]
-        public void Create_returns_Created_with_id()
+        public async Task Create_returns_Created_with_id()
         {
             var tag = new TagCreateDTO
             {
                 Name = "tag"
             };
 
-            var (response, id) = _repository.Create(tag);
+            var (response, id) = await _repository.Create(tag);
 
-            var created = _context.Tags.Find(id);
+            var created = await _context.Tags.FindAsync(id);
 
             Assert.Equal(Created, response);
             Assert.Equal(id, created.Id);
         }
 
         [Fact]
-        public void Create_creates_a_tag_with_name_and_description_and_state_New()
+        public async Task Create_creates_a_tag_with_name_and_description_and_state_New()
         {
             var tag = new TagCreateDTO
             {
                 Name = "tag"
             };
 
-            var (_, id) = _repository.Create(tag);
+            var (_, id) = await _repository.Create(tag);
 
-            var created = _context.Tags.Find(id);
+            var created = await _context.Tags.FindAsync(id);
 
             Assert.Equal("tag", created.Name);
         }
 
         [Fact]
-        public void Create_given_existing_tag_returns_Conflict()
+        public async Task Create_given_existing_tag_returns_Conflict()
         {
             var tag = new TagCreateDTO
             {
                 Name = "tag2"
             };
 
-            var (response, _) = _repository.Create(tag);
+            var (response, _) = await _repository.Create(tag);
 
             Assert.Equal(Conflict, response);
         }
 
         [Fact]
-        public void Read_given_id_returns_tag_with_mapped_properties()
+        public async Task Read_given_id_returns_tag_with_mapped_properties()
         {
-            var tag = _repository.Read(2);
+            var tag = await _repository.Read(2);
 
             Assert.Equal("tag2", tag.Name);
             Assert.Equal(0, tag.New);
@@ -83,7 +83,7 @@ namespace Assignment06.Models.Tests
         }
 
         [Fact]
-        public void Read_given_returns_all_tags_with_state_count()
+        public void Read_returns_all_tags_with_state_count()
         {
             var tags = _repository.Read();
 
@@ -100,7 +100,7 @@ namespace Assignment06.Models.Tests
         }
 
         [Fact]
-        public void Update_given_non_existing_tag_returns_NotFound()
+        public async Task Update_given_non_existing_tag_returns_NotFound()
         {
             var tag = new TagUpdateDTO
             {
@@ -108,13 +108,13 @@ namespace Assignment06.Models.Tests
                 Name = "tag",
             };
 
-            var response = _repository.Update(tag);
+            var response = await _repository.Update(tag);
 
             Assert.Equal(NotFound, response);
         }
 
         [Fact]
-        public void Update_updates_name_returns_updated()
+        public async Task Update_updates_name_returns_updated()
         {
             var tag = new TagUpdateDTO
             {
@@ -122,16 +122,16 @@ namespace Assignment06.Models.Tests
                 Name = "newtag"
             };
 
-            var response = _repository.Update(tag);
+            var response = await _repository.Update(tag);
 
-            var updated = _context.Tags.Find(2);
+            var updated = await _context.Tags.FindAsync(2);
 
             Assert.Equal(Updated, response);
             Assert.Equal("newtag", updated.Name);
         }
 
         [Fact]
-        public void Update_given_existing_name_in_other_tag_returns_Conflict()
+        public async Task Update_given_existing_name_in_other_tag_returns_Conflict()
         {
             var tag = new TagUpdateDTO
             {
@@ -139,13 +139,13 @@ namespace Assignment06.Models.Tests
                 Name = "tag1"
             };
 
-            var response = _repository.Update(tag);
+            var response = await _repository.Update(tag);
 
             Assert.Equal(Conflict, response);
         }
 
         [Fact]
-        public void Update_given_no_change_in_name_returns_Updated()
+        public async Task Update_given_no_change_in_name_returns_Updated()
         {
             var tag = new TagUpdateDTO
             {
@@ -153,60 +153,60 @@ namespace Assignment06.Models.Tests
                 Name = "tag2"
             };
 
-            var response = _repository.Update(tag);
+            var response = await _repository.Update(tag);
 
-            var updated = _context.Tags.Find(2);
+            var updated = await _context.Tags.FindAsync(2);
 
             Assert.Equal(Updated, response);
             Assert.Equal("tag2", updated.Name);
         }
 
         [Fact]
-        public void Delete_given_non_existing_tag_returns_NotFound()
+        public async Task Delete_given_non_existing_tag_returns_NotFound()
         {
-            var response = _repository.Delete(42);
+            var response = await _repository.Delete(42);
 
             Assert.Equal(NotFound, response);
         }
 
         [Fact]
-        public void Delete_given_existing_tag_returns_Deleted()
+        public async Task Delete_given_existing_tag_returns_Deleted()
         {
-            var response = _repository.Delete(3);
+            var response = await _repository.Delete(3);
 
             Assert.Equal(Deleted, response);
         }
 
         [Fact]
-        public void Delete_given_existing_tag_deletes_tag()
+        public async Task Delete_given_existing_tag_deletes_tag()
         {
-            _repository.Delete(3);
+            await _repository.Delete(3);
 
-            var entity = _context.Tags.Find(3);
+            var entity = await _context.Tags.FindAsync(3);
 
             Assert.Null(entity);
         }
 
         [Fact]
-        public void Delete_given_existing_tag_with_tasks_returns_Conflict()
+        public async Task Delete_given_existing_tag_with_tasks_returns_Conflict()
         {
-            var response = _repository.Delete(2);
+            var response = await _repository.Delete(2);
 
             Assert.Equal(Conflict, response);
         }
 
         [Fact]
-        public void Delete_given_existing_tag_with_tasks_using_force_returns_Deleted()
+        public async Task Delete_given_existing_tag_with_tasks_using_force_returns_Deleted()
         {
-            var response = _repository.Delete(2, true);
+            var response = await _repository.Delete(2, true);
 
             Assert.Equal(Deleted, response);
         }
 
         [Fact]
-        public void Delete_given_existing_tag_with_tasks_using_force_deletes_tag()
+        public async Task Delete_given_existing_tag_with_tasks_using_force_deletes_tag()
         {
-            _repository.Delete(2, true);
+            await _repository.Delete(2, true);
 
             var entity = _context.Tags.Find(2);
 

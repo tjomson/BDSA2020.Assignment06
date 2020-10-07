@@ -1,15 +1,14 @@
 using System;
 using System.Linq;
 using Assignment06.Entities;
-using Assignment06.Models;
-using Assignment06.Models.Tests;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using static Assignment06.Entities.State;
-using static Assignment06.Models.Response;
+using static Assignment06.Models.Status;
+using Task = System.Threading.Tasks.Task;
 
-namespace BDSA2019.Assignment08.Models.Tests
+namespace Assignment06.Models.Tests
 {
     public class TaskRepositoryTests : IDisposable
     {
@@ -28,7 +27,7 @@ namespace BDSA2019.Assignment08.Models.Tests
         }
 
         [Fact]
-        public void Create_returns_Created_with_id()
+        public async Task Create_returns_Created_with_id()
         {
             var task = new TaskCreateDTO
             {
@@ -36,7 +35,7 @@ namespace BDSA2019.Assignment08.Models.Tests
                 Description = "description"
             };
 
-            var (response, id) = _repository.Create(task);
+            var (response, id) = await _repository.Create(task);
 
             var created = _context.Tasks.Find(id);
 
@@ -45,7 +44,7 @@ namespace BDSA2019.Assignment08.Models.Tests
         }
 
         [Fact]
-        public void Create_creates_a_task_with_title_and_description_and_state_New()
+        public async Task Create_creates_a_task_with_title_and_description_and_state_New()
         {
             var task = new TaskCreateDTO
             {
@@ -53,9 +52,9 @@ namespace BDSA2019.Assignment08.Models.Tests
                 Description = "description"
             };
 
-            var (_, id) = _repository.Create(task);
+            var (_, id) = await _repository.Create(task);
 
-            var created = _context.Tasks.Find(id);
+            var created = await _context.Tasks.FindAsync(id);
 
             Assert.Equal("title", created.Title);
             Assert.Equal("description", created.Description);
@@ -63,7 +62,7 @@ namespace BDSA2019.Assignment08.Models.Tests
         }
 
         [Fact]
-        public void Create_assigns_user()
+        public async Task Create_assigns_user()
         {
             var task = new TaskCreateDTO
             {
@@ -72,7 +71,7 @@ namespace BDSA2019.Assignment08.Models.Tests
                 AssignedToId = 1
             };
 
-            var (_, id) = _repository.Create(task);
+            var (_, id) = await _repository.Create(task);
 
             var created = _context.Tasks.Find(id);
 
@@ -80,7 +79,7 @@ namespace BDSA2019.Assignment08.Models.Tests
         }
 
         [Fact]
-        public void Create_given_non_existing_user_returns_Conflict_and_id_0()
+        public async Task Create_given_non_existing_user_returns_Conflict_and_id_0()
         {
             var task = new TaskCreateDTO
             {
@@ -89,14 +88,14 @@ namespace BDSA2019.Assignment08.Models.Tests
                 AssignedToId = 42
             };
 
-            var (response, id) = _repository.Create(task);
+            var (response, id) = await _repository.Create(task);
 
             Assert.Equal(Conflict, response);
             Assert.Equal(0, id);
         }
 
         [Fact]
-        public void Create_creates_and_assigns_tasks()
+        public async Task Create_creates_and_assigns_tasks()
         {
             var task = new TaskCreateDTO
             {
@@ -105,7 +104,7 @@ namespace BDSA2019.Assignment08.Models.Tests
                 Tags = new[] { "tag1", "tag4" }
             };
 
-            var (_, id) = _repository.Create(task);
+            var (_, id) = await _repository.Create(task);
 
             var created = _context.Tasks.Include(i => i.Tags).ThenInclude(i => i.Tag).FirstOrDefault(i => i.Id == id);
 
@@ -116,9 +115,9 @@ namespace BDSA2019.Assignment08.Models.Tests
         }
 
         [Fact]
-        public void Read_given_id_returns_task_with_mapped_properties()
+        public async Task Read_given_id_returns_task_with_mapped_properties()
         {
-            var task = _repository.Read(2);
+            var task = await _repository.Read(2);
 
             Assert.Equal("title2", task.Title);
             Assert.Equal("description2", task.Description);
@@ -165,7 +164,7 @@ namespace BDSA2019.Assignment08.Models.Tests
         }
 
         [Fact]
-        public void Update_given_non_existing_task_returns_NotFound()
+        public async Task Update_given_non_existing_task_returns_NotFound()
         {
             var task = new TaskUpdateDTO
             {
@@ -174,13 +173,13 @@ namespace BDSA2019.Assignment08.Models.Tests
                 Description = "description"
             };
 
-            var response = _repository.Update(task);
+            var response = await _repository.Update(task);
 
             Assert.Equal(NotFound, response);
         }
 
         [Fact]
-        public void Update_given_non_existing_user_returns_Conflict()
+        public async Task Update_given_non_existing_user_returns_Conflict()
         {
             var task = new TaskUpdateDTO
             {
@@ -190,13 +189,13 @@ namespace BDSA2019.Assignment08.Models.Tests
                 AssignedToId = 42
             };
 
-            var response = _repository.Update(task);
+            var response = await _repository.Update(task);
 
             Assert.Equal(Conflict, response);
         }
 
         [Fact]
-        public void Update_updates_all_properties_and_returns_updated()
+        public async Task Update_updates_all_properties_and_returns_updated()
         {
             var task = new TaskUpdateDTO
             {
@@ -208,9 +207,9 @@ namespace BDSA2019.Assignment08.Models.Tests
                 Tags = new[] { "tag2", "tag4", "tag5" }
             };
 
-            var response = _repository.Update(task);
+            var response = await _repository.Update(task);
 
-            var updated = _context.Tasks.Include(i => i.Tags).ThenInclude(i => i.Tag).FirstOrDefault(i => i.Id == task.Id);
+            var updated = await _context.Tasks.Include(i => i.Tags).ThenInclude(i => i.Tag).FirstOrDefaultAsync(i => i.Id == task.Id);
 
             Assert.Equal(Updated, response);
             Assert.Equal("title", updated.Title);
@@ -225,61 +224,61 @@ namespace BDSA2019.Assignment08.Models.Tests
         }
 
         [Fact]
-        public void Delete_given_non_existing_task_returns_NotFound()
+        public async Task Delete_given_non_existing_task_returns_NotFound()
         {
-            var response = _repository.Delete(42);
+            var response = await _repository.Delete(42);
 
             Assert.Equal(NotFound, response);
         }
 
         [Fact]
-        public void Delete_given_existing_New_task_returns_Deleted()
+        public async Task Delete_given_existing_New_task_returns_Deleted()
         {
-            var response = _repository.Delete(1);
+            var response = await _repository.Delete(1);
 
             Assert.Equal(Deleted, response);
         }
 
         [Fact]
-        public void Delete_given_existing_New_task_deletes_task()
+        public async Task Delete_given_existing_New_task_deletes_task()
         {
-            _repository.Delete(1);
+            await _repository.Delete(1);
 
-            var entity = _context.Tasks.Find(1);
+            var entity = await _context.Tasks.FindAsync(1);
 
             Assert.Null(entity);
         }
 
         [Fact]
-        public void Delete_given_existing_Active_task_sets_state_to_Removed()
+        public async Task Delete_given_existing_Active_task_sets_state_to_Removed()
         {
-            _repository.Delete(2);
+            await _repository.Delete(2);
 
-            var entity = _context.Tasks.Find(2);
+            var entity = await _context.Tasks.FindAsync(2);
 
             Assert.Equal(Removed, entity.State);
         }
 
         [Fact]
-        public void Delete_given_existing_Resolved_task_returns_Conflict()
+        public async Task Delete_given_existing_Resolved_task_returns_Conflict()
         {
-            var response = _repository.Delete(3);
+            var response = await _repository.Delete(3);
 
             Assert.Equal(Conflict, response);
         }
 
         [Fact]
-        public void Delete_given_existing_Closed_task_returns_Conflict()
+        public async Task Delete_given_existing_Closed_task_returns_Conflict()
         {
-            var response = _repository.Delete(4);
+            var response = await _repository.Delete(4);
 
             Assert.Equal(Conflict, response);
         }
 
         [Fact]
-        public void Delete_given_existing_Removed_task_returns_Conflict()
+        public async Task  Delete_given_existing_Removed_task_returns_Conflict()
         {
-            var response = _repository.Delete(5);
+            var response = await _repository.Delete(5);
 
             Assert.Equal(Conflict, response);
         }

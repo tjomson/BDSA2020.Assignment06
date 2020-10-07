@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Assignment06.Entities;
 using Microsoft.EntityFrameworkCore;
 using static Assignment06.Entities.State;
-using static Assignment06.Models.Response;
+using static Assignment06.Models.Status;
+using KanbanTask = Assignment06.Entities.Task;
 
 namespace Assignment06.Models
 {
@@ -16,28 +18,29 @@ namespace Assignment06.Models
             _context = context;
         }
 
-        public (Response response, int createdId) Create(TaskCreateDTO task)
+        public async Task<(Status response, int createdId)> Create(TaskCreateDTO task)
         {
-            if (task.AssignedToId.HasValue && !UserExists(task.AssignedToId.Value))
+            if (task.AssignedToId.HasValue && !await UserExists(task.AssignedToId.Value))
             {
                 return (Conflict, 0);
             }
 
-            var entity = new Task
+            var entity = new KanbanTask
             {
                 Title = task.Title,
                 Description = task.Description,
                 AssignedToId = task.AssignedToId,
-                Tags = MapTags(0, task.Tags).ToList()
+                Tags = await MapTags(0, task.Tags)
             };
 
             _context.Tasks.Add(entity);
-            _context.SaveChanges();
+
+            await _context.SaveChangesAsync();
 
             return (Created, entity.Id);
         }
 
-        public TaskDetailsDTO Read(int taskId)
+        public async Task<TaskDetailsDTO> Read(int taskId)
         {
             var task = from t in _context.Tasks
                        where t.Id == taskId
@@ -49,10 +52,10 @@ namespace Assignment06.Models
                            AssignedToId = t.AssignedToId,
                            AssignedToName = t.AssignedTo.Name,
                            State = t.State,
-                           Tags = t.Tags.ToDictionary(a => a.TagId, a => a.Tag.Name)
+                           InnerTags = t.Tags.Select(a => new KeyValuePair<int, string>(a.TagId, a.Tag.Name))
                        };
 
-            return task.FirstOrDefault();
+            return await task.FirstOrDefaultAsync();
         }
 
         public IQueryable<TaskListDTO> Read(bool includeRemoved = false)
@@ -66,20 +69,20 @@ namespace Assignment06.Models
                        AssignedToId = t.AssignedToId,
                        AssignedToName = t.AssignedTo.Name,
                        State = t.State,
-                       Tags = t.Tags.ToDictionary(a => a.TagId, a => a.Tag.Name)
+                       InnerTags = t.Tags.Select(a => new KeyValuePair<int, string>(a.TagId, a.Tag.Name))
                    };
         }
 
-        public Response Update(TaskUpdateDTO task)
+        public async Task<Status> Update(TaskUpdateDTO task)
         {
-            var entity = _context.Tasks.Include(t => t.Tags).FirstOrDefault(t => t.Id == task.Id);
+            var entity = await _context.Tasks.Include(t => t.Tags).FirstOrDefaultAsync(t => t.Id == task.Id);
 
             if (entity == null)
             {
                 return NotFound;
             }
 
-            if (task.AssignedToId.HasValue && !UserExists(task.AssignedToId.Value))
+            if (task.AssignedToId.HasValue && !await UserExists(task.AssignedToId.Value))
             {
                 return (Conflict);
             }
@@ -88,23 +91,23 @@ namespace Assignment06.Models
             entity.Description = task.Description;
             entity.AssignedToId = task.AssignedToId;
             entity.State = task.State;
-            entity.Tags = MapTags(task.Id, task.Tags).ToList();
+            entity.Tags = await MapTags(task.Id, task.Tags);
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return Updated;
         }
 
-        public Response Delete(int taskId)
+        public async Task<Status> Delete(int taskId)
         {
-            var entity = _context.Tasks.Find(taskId);
+            var entity = await _context.Tasks.FindAsync(taskId);
 
             if (entity == null)
             {
                 return NotFound;
             }
 
-            Response response;
+            Status response;
 
             switch (entity.State)
             {
@@ -121,21 +124,25 @@ namespace Assignment06.Models
                     break;
             }
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return response;
         }
 
-        private bool UserExists(int userId) => _context.Users.Any(u => u.Id == userId);
+        private Task<bool> UserExists(int userId) => _context.Users.AnyAsync(u => u.Id == userId);
 
-        private IEnumerable<TaskTag> MapTags(int taskId, IEnumerable<string> tags)
+        private async Task<ICollection<TaskTag>> MapTags(int taskId, IEnumerable<string> tags)
         {
+            var taskTags = new List<TaskTag>();
+
             foreach (var tag in tags)
             {
-                var entity = _context.Tags.FirstOrDefault(t => t.Name == tag) ?? new Tag { Name = tag };
+                var entity = await _context.Tags.FirstOrDefaultAsync(t => t.Name == tag) ?? new Tag { Name = tag };
 
-                yield return new TaskTag { TaskId = taskId, Tag = entity };
+                taskTags.Add(new TaskTag { TaskId = taskId, Tag = entity });
             }
+
+            return taskTags;
         }
     }
 }

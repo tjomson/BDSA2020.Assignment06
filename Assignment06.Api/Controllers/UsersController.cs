@@ -13,7 +13,7 @@ namespace Assignment06.Api.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserRepository _repository;
-
+        
         public UsersController(IUserRepository repository)
         {
             _repository = repository;
@@ -23,14 +23,21 @@ namespace Assignment06.Api.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserListDTO>>> Get()
         {
-            var read = await _repository.ReadAsync();
-            return read.ToList();
+            var result = await _repository.ReadAsync();
+            return result.ToList();
         }
 
         // GET: users/5 
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDetailsDTO>> Get(int id)
         {
+            var result = await _repository.ReadAsync(id);
+            
+            if(result == null)
+            {
+                return NotFound();
+            }
+
             return await _repository.ReadAsync(id);
         }
 
@@ -52,14 +59,33 @@ namespace Assignment06.Api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] UserUpdateDTO user)
         {
-            throw new NotImplementedException();
+            var response = await _repository.UpdateAsync(user);
+
+            if(response == Status.NotFound)
+            {
+                return NotFound();
+            }
+            
+            if(response == Status.Conflict)
+            {
+                return Conflict();
+            }
+
+            return new StatusCodeResult((int) response);
         }
 
         // DELETE: users/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            throw new NotImplementedException();
+            var response = await _repository.DeleteAsync(id);
+
+            if(response == Status.Conflict)
+            {
+                return Conflict();
+            }
+
+            return new StatusCodeResult((int) response);
         }
     }
 }
